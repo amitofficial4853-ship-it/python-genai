@@ -630,7 +630,7 @@ class BaseApiClient:
         self.api_key = None
 
       if not self.location and not self.api_key:
-          self.location = 'global'
+        self.location = 'global'
 
       self.custom_base_url = (
           validated_http_options.base_url
@@ -728,7 +728,11 @@ class BaseApiClient:
 
   async def _get_aiohttp_session(self) -> 'aiohttp.ClientSession':
     """Returns the aiohttp client session."""
-    if self._aiohttp_session is None or self._aiohttp_session.closed:
+    if (
+        self._aiohttp_session is None
+        or self._aiohttp_session.closed
+        or self._aiohttp_session.loop.is_closed()
+    ):
       # Initialize the aiohttp client session if it's not set up or closed.
       self._aiohttp_session = aiohttp.ClientSession(
           connector=aiohttp.TCPConnector(limit=0),
