@@ -33,6 +33,7 @@ except ImportError:
 import httpx
 
 from ... import _api_client as api_client
+from ... import errors
 
 
 class MockHTTPXResponse(httpx.Response):
@@ -134,6 +135,36 @@ async def test_httpx_data_prefix(responses: api_client.HttpResponse):
   assert results == ["{ 'message': 'hello' }", "{ 'status': 'ok' }"]
   mock_response.aiter_lines.assert_called_once()
   mock_response.aclose.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_httpx_with_error(responses: api_client.HttpResponse):
+  lines = [
+      'data: { "message": "hello" }',
+      '{"error": {"code": 500, "message": "Internal error", "status":"INTERNAL"}}',
+  ]
+  mock_response = MockHTTPXResponse(lines)
+  responses.response_stream = mock_response
+
+  with pytest.raises(errors.ServerError):
+    async for _ in responses._aiter_response_stream():
+      pass
+
+
+@pytest.mark.asyncio
+async def test_httpx_with_multilines_error(responses: api_client.HttpResponse):
+  lines = [
+      'data: { "message": "hello" }',
+      '{"error": {',
+      '"code": 500, "message": "Internal error", "status":"INTERNAL"}',
+      '}',
+  ]
+  mock_response = MockHTTPXResponse(lines)
+  responses.response_stream = mock_response
+
+  with pytest.raises(errors.ServerError):
+    async for _ in responses._aiter_response_stream():
+      pass
 
 
 @pytest.mark.asyncio

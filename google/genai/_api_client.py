@@ -343,6 +343,27 @@ class HttpResponse:
     if chunk:
       yield chunk
 
+  def _return_or_raise(self, chunk: str) -> str:
+    """Returns the chunk if it starts with "data: ", or raises an error if the
+    chunk is a json that contains an error field."""
+
+    if not chunk.startswith('data: '):
+      # If a line does not start with "data: ", parse the line as JSON and
+      # check if it contains an error. If so, raise the appropriate error.
+      # Otherwise, the line is a valid continue processing the chunk.
+      error_code = 0
+      json_value = None
+      try:
+        json_value = json.loads(chunk)
+        error_code = json_value.get('error', {}).get('code', 0)
+      except json.JSONDecodeError:
+        pass
+      if 400 <= error_code < 500:
+        raise errors.ClientError(error_code, json_value, chunk)
+      elif 500 <= error_code < 600:
+        raise errors.ServerError(error_code, json_value, chunk)
+    return chunk
+
   async def _aiter_response_stream(self) -> AsyncIterator[str]:
     """Asynchronously iterates over chunks retrieved from the API."""
     is_valid_response = isinstance(self.response_stream, httpx.Response) or (
@@ -380,11 +401,11 @@ class HttpResponse:
 
           chunk += line
           if balance == 0:
-            yield chunk
+            yield self._return_or_raise(chunk)
             chunk = ''
         # If there is any remaining chunk, yield it.
         if chunk:
-          yield chunk
+          yield self._return_or_raise(chunk)
       finally:
         # Close the response and release the connection.
         await self.response_stream.aclose()
