@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.49.1](https://github.com/googleapis/python-genai/compare/v1.49.0...v1.49.1) (2025-11-06)
+
+
+### Documentation
+
+* Regenerate docs for 1.49.0 ([74b680a](https://github.com/googleapis/python-genai/commit/74b680adfdf74b6e807d50d8595f092cd522a6f8))
+
 ## [1.49.0](https://github.com/googleapis/python-genai/compare/v1.48.0...v1.49.0) (2025-11-05)
 
 
